@@ -1,0 +1,16 @@
+Médias mensais e maiores temperaturas de cada mês:
+Mês 1: Média = 26.81°C, Maior = 33.70°C
+Mês 2: Média = 27.78°C, Maior = 33.20°C
+Mês 3: Média = 26.84°C, Maior = 33.10°C
+Mês 4: Média = 26.88°C, Maior = 32.40°C
+Mês 5: Média = 27.81°C, Maior = 32.90°C
+Mês 6: Média = 29.55°C, Maior = 32.80°C
+Mês 7: Média = 30.52°C, Maior = 34.10°C
+Mês 8: Média = 30.49°C, Maior = 34.40°C
+Mês 9: Média = 30.65°C, Maior = 34.40°C
+Mês 10: Média = 31.31°C, Maior = 35.50°C
+Mês 11: Média = 31.34°C, Maior = 34.60°C
+Mês 12: Média = 31.18°C, Maior = 33.60°C
+
+Média anual: 29.05°C
+Maior temperatura do ano: 35.50°C
