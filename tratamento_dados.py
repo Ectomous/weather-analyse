@@ -1,39 +1,42 @@
 import pandas as pd
+import os
 
-# Carregar o arquivo CSV com tabulação como delimitador e pulando as primeiras 8 linhas
-df = pd.read_csv('./db/rawData/2024.csv', encoding='ISO-8859-1', sep='\t', skiprows=8)
+# Define o caminho ao diretório que contém os arquivos de dados brutos e onde serão armazenados os dados tratados.
+raw_data_dir = './db/rawData/'
+filtered_data_dir = './db/filteredData/'
 
-# Mostrar as primeiras linhas para verificar a leitura correta
-# print(df.head())
+# Certifica que o diretório de dados tratados existe.
+os.makedirs(filtered_data_dir, exist_ok=True)
 
-# Renomear as colunas para remover caracteres especiais
-df.columns = ['Data', 'Hora UTC', 'TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)']
+# Cria o laço de repetição para percorrer todos os arquivos no diretório de dados brutos
+for filename in os.listdir(raw_data_dir):
+    if filename.endswith('.csv'):
+        # Constrói o caminho completo do arquivo.
+        file_path = os.path.join(raw_data_dir, filename)
 
-# Verificar e renomear a coluna de data, se necessário
-if 'DATA (YYYY-MM-DD)' in df.columns:
-    df.rename(columns={'DATA (YYYY-MM-DD)': 'DATA (YYYY-MM-DD)'}, inplace=True)
-elif 'Data' in df.columns:
-    df.rename(columns={'Data': 'DATA (YYYY-MM-DD)'}, inplace=True)
-else:
-    raise KeyError("Nenhuma coluna de data encontrada no arquivo CSV.")
+        # Carrega o arquivo CSV com tabulação como delimitador e pula as primeiras 8 linhas, que possuem informações sobre a cidade, desnecessárias para o projeto.
+        df = pd.read_csv(file_path, encoding='ISO-8859-1', sep='\t', skiprows=8)
 
-# Remover as linhas onde a coluna de temperatura é igual a -9999
-df_limpado = df[df['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'] != -9999].copy()  # Use .copy() para evitar o aviso
+        # Renomeia as colunas para padronizar seus nomes, visto que, com o passar dos anos, a base de dados CSV mudou o nome das colunas.
+        df.columns = ['DATA (YYYY-MM-DD)', 'Hora UTC', 'TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)']
 
-# Converter a coluna de data para garantir que está no formato de data
-df_limpado['DATA (YYYY-MM-DD)'] = pd.to_datetime(df_limpado['DATA (YYYY-MM-DD)'], errors='coerce')
+        # Verifica e converte a coluna de temperatura máxima para o tipo 'number', visto que em um dos arquivos CSV o valor de temperatura foi passado como 'string'.
+        if df['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'].dtype == 'object':
+            df['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'] = df['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'].str.replace(',', '.').astype(float)
 
-# Verificar o formato da coluna de horário e converter adequadamente
-try:
-    df_limpado['Hora UTC'] = pd.to_datetime(df_limpado['Hora UTC'].str.replace(' UTC', ''), format='%H%M').dt.time
-except ValueError:
-    df_limpado['Hora UTC'] = pd.to_datetime(df_limpado['Hora UTC'].str.replace(' UTC', ''), format='%H:%M').dt.time
+        # Remove as linhas onde a coluna de temperatura máxima está vazia ou igual a -9999.
+        df_limpado = df.dropna(subset=['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'])
+        df_limpado = df_limpado[df_limpado['TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)'] != -9999].copy()
 
-# Filtrar os horários entre 08:00h e 18:00h
-df_filtrado = df_limpado[df_limpado['Hora UTC'].between(pd.to_datetime('08:00').time(), pd.to_datetime('18:00').time())]
+        # Verifica o formato da coluna de horário e converte adequadamente
+        try:
+            df_limpado['Hora UTC'] = pd.to_datetime(df_limpado['Hora UTC'].str.replace(' UTC', ''), format='%H%M').dt.time
+        except ValueError:
+            df_limpado['Hora UTC'] = pd.to_datetime(df_limpado['Hora UTC'].str.replace(' UTC', ''), format='%H:%M').dt.time
 
-# Salvar o DataFrame filtrado em um novo arquivo CSV
-df_filtrado.to_csv('./db/filteredData/2024.csv', index=False)
+        # Filtra os horários entre 08:00h e 18:00h
+        df_filtrado = df_limpado[df_limpado['Hora UTC'].between(pd.to_datetime('08:00').time(), pd.to_datetime('18:00').time())]
 
-# Conferir as primeiras linhas após a remoção e filtragem de horário
-# print(df_filtrado.head())
+        # Salva o DataFrame filtrado em um novo arquivo CSV no diretório de dados filtrados
+        filtered_file_path = os.path.join(filtered_data_dir, filename)
+        df_filtrado.to_csv(filtered_file_path, index=False)
